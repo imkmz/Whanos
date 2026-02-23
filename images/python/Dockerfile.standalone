@@ -1,0 +1,19 @@
+# Whanos Python Standalone Image
+# Based on whanos-python base image
+FROM whanos-python
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory to root
+WORKDIR /
+
+# Copy dependency file and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application sources from app/ directory
+COPY app/ ./app/
+
+# Set execution command: python -m app (from root of repository)
+CMD ["python", "-m", "app"]

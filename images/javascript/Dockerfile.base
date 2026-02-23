@@ -1,0 +1,12 @@
+# Whanos JavaScript Base Image
+# Based on Node.js 20.9
+FROM node:20.9-alpine
+
+# Install bash first (alpine needs it)
+RUN apk add --no-cache bash
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory
+WORKDIR /app

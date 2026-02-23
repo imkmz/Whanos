@@ -1,0 +1,19 @@
+# Whanos C Standalone Image
+# Based on whanos-c base image
+FROM whanos-c
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory to root
+WORKDIR /
+
+# Copy Makefile and source files from app/
+COPY Makefile .
+COPY app/ ./app/
+
+# Compile using make - expects to produce compiled-app at root
+RUN make
+
+# Set execution command: run the compiled binary
+CMD ["./compiled-app"]

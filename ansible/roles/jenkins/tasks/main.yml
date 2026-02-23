@@ -1,0 +1,71 @@
+---
+# Jenkins Role - Deploy Jenkins CI/CD on whanos-services
+
+- name: Install Docker
+  apt:
+    name: 
+      - docker.io
+      - rsync
+    state: present
+    update_cache: yes
+
+- name: Start Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Create whanos directory on server
+  file:
+    path: /opt/whanos
+    state: directory
+    mode: '0755'
+
+- name: Copy whanos files to server
+  synchronize:
+    src: "{{ playbook_dir }}/../"
+    dest: /opt/whanos/
+    rsync_opts:
+      - "--exclude=.git"
+      - "--exclude=ansible"
+      - "--exclude=.windsurf"
+
+- name: Build Jenkins image
+  docker_image:
+    name: whanos-jenkins
+    build:
+      path: /opt/whanos/
+      dockerfile: jenkins/Dockerfile
+    source: build
+    state: present
+
+- name: Create Jenkins volume
+  docker_volume:
+    name: jenkins_home
+    state: present
+
+- name: Run Jenkins container
+  docker_container:
+    name: whanos-jenkins
+    image: whanos-jenkins
+    state: started
+    restart_policy: always
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    env:
+      JENKINS_ADMIN_PASSWORD: "admin"
+      WHANOS_HOME: "/whanos"
+
+- name: Fix Docker socket permissions
+  command: docker exec -u root whanos-jenkins chmod 666 /var/run/docker.sock
+  ignore_errors: yes
+
+- name: Wait for Jenkins to start
+  wait_for:
+    port: 8080
+    delay: 10
+    timeout: 300

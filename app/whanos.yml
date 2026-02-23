@@ -1,0 +1,20 @@
+# Whanos Configuration File Example
+# Place this file at the root of your project repository
+
+deployment:
+  # Number of replicas for the deployment (default: 1)
+  replicas: 3
+  
+  # Kubernetes resource specifications (optional)
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  # List of ports to expose (will create LoadBalancer service)
+  ports:
+    - 8080
+    - 3000

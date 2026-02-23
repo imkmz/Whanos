@@ -1,0 +1,100 @@
+# Whanos Befunge Standalone Image
+# Based on Python with simple Befunge interpreter
+FROM python:3.12-slim
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory to root
+WORKDIR /
+
+# Create a simple Befunge-93 interpreter
+RUN cat > /usr/local/bin/befunge <<'EOF'
+#!/usr/bin/env python3
+import sys
+
+def run_befunge(code):
+    grid = [list(line.ljust(80)) for line in code.split('\n')]
+    while len(grid) < 25:
+        grid.append([' '] * 80)
+    
+    stack = []
+    x, y, dx, dy = 0, 0, 1, 0
+    string_mode = False
+    
+    for _ in range(1000000):  # Max iterations
+        if not (0 <= y < len(grid) and 0 <= x < len(grid[y])):
+            break
+        
+        cmd = grid[y][x]
+        
+        if string_mode:
+            if cmd == '"':
+                string_mode = False
+            else:
+                stack.append(ord(cmd))
+        elif cmd == '@':
+            break
+        elif cmd == '"':
+            string_mode = True
+        elif cmd == ',':
+            if stack:
+                print(chr(stack.pop()), end='')
+        elif cmd == '.':
+            if stack:
+                print(stack.pop(), end='')
+        elif cmd == '>':
+            dx, dy = 1, 0
+        elif cmd == '<':
+            dx, dy = -1, 0
+        elif cmd == '^':
+            dx, dy = 0, -1
+        elif cmd == 'v':
+            dx, dy = 0, 1
+        elif cmd == '|':
+            dy = -1 if (stack.pop() if stack else 0) else 1
+            dx = 0
+        elif cmd == '_':
+            dx = -1 if (stack.pop() if stack else 0) else 1
+            dy = 0
+        elif cmd in '0123456789':
+            stack.append(int(cmd))
+        elif cmd == '+':
+            b = stack.pop() if stack else 0
+            a = stack.pop() if stack else 0
+            stack.append(a + b)
+        elif cmd == '-':
+            b = stack.pop() if stack else 0
+            a = stack.pop() if stack else 0
+            stack.append(a - b)
+        elif cmd == '*':
+            b = stack.pop() if stack else 0
+            a = stack.pop() if stack else 0
+            stack.append(a * b)
+        elif cmd == ':':
+            val = stack[-1] if stack else 0
+            stack.append(val)
+        elif cmd == '$':
+            if stack:
+                stack.pop()
+        
+        x += dx
+        y += dy
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Usage: befunge <file.bf>")
+        sys.exit(1)
+    
+    with open(sys.argv[1], 'r') as f:
+        code = f.read()
+    
+    run_befunge(code)
+EOF
+RUN chmod +x /usr/local/bin/befunge
+
+# Copy main.bf file from app/ directory
+COPY app/main.bf ./app/main.bf
+
+# Set execution command: run befunge interpreter from root
+CMD ["befunge", "app/main.bf"]

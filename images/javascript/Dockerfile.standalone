@@ -1,0 +1,19 @@
+# Whanos JavaScript Standalone Image
+# Based on whanos-javascript base image
+FROM whanos-javascript
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory to root
+WORKDIR /
+
+# Copy package.json and install dependencies
+COPY package.json .
+RUN npm install
+
+# Copy application source from app/
+COPY app/ ./app/
+
+# Set execution command: node .
+CMD ["node", "."]

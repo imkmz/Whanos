@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  jenkins:
+    build:
+      context: ..
+      dockerfile: jenkins/Dockerfile
+    image: whanos-jenkins:latest
+    container_name: whanos-jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_home:/var/jenkins_home
+    environment:
+      - JENKINS_ADMIN_PASSWORD=admin
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - whanos
+
+volumes:
+  jenkins_home:
+    driver: local
+
+networks:
+  whanos:
+    driver: bridge

@@ -1,0 +1,18 @@
+---
+- name: Deploy Docker registry
+  hosts: docker_registry
+  become: true
+  roles:
+    - docker-registry
+
+- name: Deploy Jenkins
+  hosts: jenkins_server
+  become: true
+  roles:
+    - jenkins
+
+- name: Deploy Kubernetes cluster (k3s)
+  hosts: kubernetes_cluster
+  become: true
+  roles:
+    - kubernetes

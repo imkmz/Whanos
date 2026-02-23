@@ -1,0 +1,15 @@
+# Whanos Python Base Image
+# Based on official Python image
+FROM python:3.12
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory
+WORKDIR /app
+
+# Install pip (already included in python:3.12 but ensure latest)
+RUN pip install --upgrade pip
+
+# This base image is buildable without any application code
+# Custom Dockerfiles will extend this and add their own requirements.txt and app code

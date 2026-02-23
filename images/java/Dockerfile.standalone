@@ -1,0 +1,22 @@
+# Whanos Java Standalone Image
+# Based on whanos-java base image
+FROM whanos-java
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory to root
+WORKDIR /
+
+# Copy pom.xml and source files
+COPY pom.xml .
+COPY src/ ./src/
+
+# Compile using Maven - produces target/app.jar
+RUN mvn package
+
+# Move app.jar to root directory for execution
+RUN mv target/*.jar app.jar
+
+# Set execution command: java -jar app.jar (from root)
+CMD ["java", "-jar", "app.jar"]

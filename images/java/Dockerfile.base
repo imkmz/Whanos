@@ -1,0 +1,9 @@
+# Whanos Java Base Image
+# Based on Java SE 21 with Maven
+FROM maven:3.9-eclipse-temurin-21
+
+# Use bash for all build instructions
+SHELL ["/bin/bash", "-c"]
+
+# Set working directory
+WORKDIR /app

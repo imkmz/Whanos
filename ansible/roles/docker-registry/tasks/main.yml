@@ -1,0 +1,31 @@
+---
+# Docker Registry Role - Deploy Docker Registry on whanos-services
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+    update_cache: yes
+
+- name: Start Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Create registry data directory
+  file:
+    path: /var/lib/registry
+    state: directory
+    mode: '0755'
+
+- name: Run Docker Registry container
+  docker_container:
+    name: registry
+    image: registry:2
+    state: started
+    restart_policy: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/lib/registry:/var/lib/registry

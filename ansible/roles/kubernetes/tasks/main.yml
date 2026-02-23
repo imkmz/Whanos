@@ -1,0 +1,89 @@
+
+---
+
+- name: Ensure required packages are installed
+  apt:
+    name:
+      - curl
+      - ca-certificates
+    state: present
+    update_cache: yes
+
+# Install k3s on control plane nodes
+- name: Install k3s server (control plane)
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+  args:
+    creates: /usr/local/bin/k3s
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Wait for kube-apiserver on control plane
+  wait_for:
+    port: 6443
+    host: 127.0.0.1
+    timeout: 120
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Read k3s node token from control plane (delegate to first control plane)
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_base64
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Set k3s_token fact on control plane
+  set_fact:
+    k3s_node_token: "{{ k3s_token_base64['content'] | b64decode | trim }}"
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Gather control plane address
+  set_fact:
+    k3s_server_url: "https://{{ ansible_host | default(inventory_hostname) }}:6443"
+  when: inventory_hostname in groups['kube_control_plane']
+
+# Join workers to the cluster using values read from control plane
+- name: Get join token from the first control plane (delegate)
+  command: cat /var/lib/rancher/k3s/server/node-token
+  register: master_token
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+
+- name: Join k3s agent on worker nodes
+  shell: |
+    K3S_URL={{ 'https://' + hostvars[groups['kube_control_plane'][0]]['ansible_host'] + ':6443' }} K3S_TOKEN={{ master_token.stdout }} \
+      curl -sfL https://get.k3s.io | sh -s - agent
+  args:
+    creates: /var/lib/rancher/k3s/agent
+  when: inventory_hostname in groups['kube_node']
+
+# Export kubeconfig on control plane(s) to a shared path for Jenkins to consume
+- name: Ensure /opt/whanos exists
+  file:
+    path: /opt/whanos
+    state: directory
+    mode: '0755'
+
+- name: Copy kubeconfig to /opt/whanos/kubeconfig
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: /opt/whanos/kubeconfig
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Adjust kubeconfig server address to use host IP
+  replace:
+    path: /opt/whanos/kubeconfig
+    regexp: 'server: https?://127\\.0\\.0\\.1:6443'
+    replace: "server: https://{{ ansible_host | default(inventory_hostname) }}:6443"
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Try to copy kubeconfig into Jenkins container (if running)
+  shell: |
+    if docker ps --format '{{{{.Names}}}}' | grep -q whanos-jenkins; then
+      docker cp /opt/whanos/kubeconfig whanos-jenkins:/var/jenkins_home/kubeconfig || true
+    fi
+  args:
+    warn: false
+  when: inventory_hostname in groups['kube_control_plane']
