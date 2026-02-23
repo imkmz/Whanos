@@ -334,4 +334,4 @@ For security considerations and production deployment guidelines, please read [S
 
 ## 👥 Contributors
 
-DevOps Team - G-DOP-500-STG-5-1
+@imkmz - @BonesFR - @coucoucmoaa
