@@ -14,7 +14,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - jenkins_home:/var/jenkins_home
     environment:
-      - JENKINS_ADMIN_PASSWORD=admin
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD:-admin}
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
     restart: unless-stopped
     networks:
